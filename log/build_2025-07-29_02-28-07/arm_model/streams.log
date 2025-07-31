@@ -1,0 +1,20 @@
+[0.870s] Invoking command in '/ros2_ws/src/arm_model': PYTHONPATH=/ros2_ws/build/arm_model/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/ros2_ws/install/arm_model/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/arm_model build --build-base /ros2_ws/build/arm_model/build install --record /ros2_ws/build/arm_model/install.log --single-version-externally-managed install_data
+[1.091s] running egg_info
+[1.103s] writing ../../build/arm_model/arm_model.egg-info/PKG-INFO
+[1.104s] writing dependency_links to ../../build/arm_model/arm_model.egg-info/dependency_links.txt
+[1.106s] writing requirements to ../../build/arm_model/arm_model.egg-info/requires.txt
+[1.109s] writing top-level names to ../../build/arm_model/arm_model.egg-info/top_level.txt
+[1.143s] reading manifest file '../../build/arm_model/arm_model.egg-info/SOURCES.txt'
+[1.143s] writing manifest file '../../build/arm_model/arm_model.egg-info/SOURCES.txt'
+[1.143s] running build
+[1.144s] running build_py
+[1.144s] running install
+[1.148s] running install_lib
+[1.161s] running install_data
+[1.162s] copying rviz/display.rviz -> /ros2_ws/install/arm_model/share/arm_model/rviz
+[1.162s] running install_egg_info
+[1.175s] removing '/ros2_ws/install/arm_model/lib/python3.12/site-packages/arm_model-0.0.0-py3.12.egg-info' (and everything under it)
+[1.175s] Copying ../../build/arm_model/arm_model.egg-info to /ros2_ws/install/arm_model/lib/python3.12/site-packages/arm_model-0.0.0-py3.12.egg-info
+[1.176s] running install_scripts
+[1.281s] writing list of installed files to '/ros2_ws/build/arm_model/install.log'
+[1.306s] Invoked command in '/ros2_ws/src/arm_model' returned '0': PYTHONPATH=/ros2_ws/build/arm_model/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/ros2_ws/install/arm_model/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/arm_model build --build-base /ros2_ws/build/arm_model/build install --record /ros2_ws/build/arm_model/install.log --single-version-externally-managed install_data

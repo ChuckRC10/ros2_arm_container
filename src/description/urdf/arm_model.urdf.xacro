@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Arm Model -->
+<!--
+Copied from ros2_control_demos
+https://github.com/ros-controls/ros2_control_demos.git
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arm_model">
+  <xacro:arg name="prefix" default="" />
+
+  <!-- Import arm_model macro -->
+  <xacro:include filename="arm_model_description.urdf.xacro" />
+
+  <!-- Import Rviz colors -->
+  <xacro:include filename="arm_model.materials.xacro" />
+
+  <!-- Import arm_model ros2_control description -->
+  <xacro:include filename="arm_model.ros2_control.xacro" />
+
+  <!-- Used for fixing robot -->
+  <link name="world"/>
+
+  <xacro:arm_model parent="world" prefix="$(arg prefix)">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:arm_model>
+
+  <xacro:arm_model_ros2_control
+    name="arm_model" prefix="$(arg prefix)" />
+
+</robot>

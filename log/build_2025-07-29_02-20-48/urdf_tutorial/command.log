@@ -1,0 +1,4 @@
+Invoking command in '/ros2_ws/build/urdf_tutorial': CMAKE_PREFIX_PATH=/ros2_ws/install/arm_model:/opt/ros/jazzy:${CMAKE_PREFIX_PATH} /usr/bin/cmake --build /ros2_ws/build/urdf_tutorial -- -j8 -l8
+Invoked command in '/ros2_ws/build/urdf_tutorial' returned '0': CMAKE_PREFIX_PATH=/ros2_ws/install/arm_model:/opt/ros/jazzy:${CMAKE_PREFIX_PATH} /usr/bin/cmake --build /ros2_ws/build/urdf_tutorial -- -j8 -l8
+Invoking command in '/ros2_ws/build/urdf_tutorial': CMAKE_PREFIX_PATH=/ros2_ws/install/arm_model:/opt/ros/jazzy:${CMAKE_PREFIX_PATH} /usr/bin/cmake --install /ros2_ws/build/urdf_tutorial
+Invoked command in '/ros2_ws/build/urdf_tutorial' returned '0': CMAKE_PREFIX_PATH=/ros2_ws/install/arm_model:/opt/ros/jazzy:${CMAKE_PREFIX_PATH} /usr/bin/cmake --install /ros2_ws/build/urdf_tutorial
