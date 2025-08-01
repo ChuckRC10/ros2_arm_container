@@ -113,5 +113,6 @@
       <axis xyz="0 1 0"/>
       <origin xyz="0 0 ${arm_length}"/>
     </joint>
-    robot>
+  </xacro:macro>
+</robot>
     
