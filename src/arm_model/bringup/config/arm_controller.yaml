@@ -1,0 +1,27 @@
+controller_manager:
+  ros__parameter:
+    update_rate: 10 # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+  # Settings for joint trajectory controller
+  joint_trajectory_controller:
+    ros__parameters:
+      # List of joints that this controller will manage
+      joints:
+        - joint1
+        - joint2
+        - joint 3
+      interface_name: position
+      # The interfaces (position, velocity, etc.) that the controller will command
+      command_interfaces:
+        - position
+
+      # The interfaces that the controller will use to read the robot's state
+      state_interfaces:
+        - position
+        - velocity

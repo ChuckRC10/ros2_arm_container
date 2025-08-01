@@ -18,6 +18,8 @@ setup(
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*.xacro')),
         # This line installs all .rviz files
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
+        # this line installs yaml files in config directory
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
