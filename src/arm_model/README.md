@@ -15,3 +15,7 @@ Dependency Management: A different team working on motion planning might only ne
 Clarity: It separates concerns. If you want to change the robot's physical shape, you go to the description package. If you want to change how it's controlled or which simulator it runs in, you go to the bringup package.
 
 Reusability: You can write a different bringup package for a different simulator, or for the real hardware, all while using the exact same description package.
+
+
+post-installed packages:
+apt-get update && apt-get install -y ros-jazzy-ros2-control ros-jazzy-ros2-controllers

@@ -15,7 +15,7 @@ controller_manager:
       joints:
         - joint1
         - joint2
-        - joint 3
+        - joint3
       interface_name: position
       # The interfaces (position, velocity, etc.) that the controller will command
       command_interfaces:

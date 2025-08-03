@@ -15,11 +15,12 @@ setup(
         ('share/' + package_name, ['package.xml']),
         
         # Corrected paths for your structure
-        (os.path.join('share', package_name, 'launch'), glob('bringup/launch/*.launch.py')),
-        (os.path.join('share', package_name, 'urdf'), glob('description/urdf/*.xacro')),
+        (os.path.join('share', package_name, 'bringup/launch'), glob('bringup/launch/*.launch.py')),
+        (os.path.join('share', package_name, 'description/urdf'), glob('description/urdf/*.xacro')),
         (os.path.join('share', package_name, 'description/ros2_control'), glob('description/ros2_control/*')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
-        (os.path.join('share', package_name, 'config'), glob('bringup/config/*.yaml'))
+        (os.path.join('share', package_name, 'bringup/config'), glob('bringup/config/*.yaml')),
+        (os.path.join('share', package_name, 'gazebo/worlds'), glob('gazebo/worlds/*.sdf'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,

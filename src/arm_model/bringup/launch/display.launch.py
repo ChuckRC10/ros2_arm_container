@@ -12,8 +12,8 @@ def generate_launch_description():
     pkg_share = get_package_share_directory('arm_model')
 
     # Define the path to the xacro file
-    xacro_file = os.path.join(pkg_share, 'urdf', 'arm_model.urdf.xacro')
-    controllers_file = os.path.join(pkg_share, 'config', 'arm_controller.yaml')
+    xacro_file = os.path.join(pkg_share, 'description', 'urdf', 'arm_model.urdf.xacro')
+    controllers_file = os.path.join(pkg_share, 'bringup', 'config', 'arm_controller.yaml')
 
     # Process the xacro file to generate the robot description
     robot_description_config = xacro.process_file(xacro_file)
@@ -21,6 +21,9 @@ def generate_launch_description():
 
     # Define the path to the rviz config file
     rviz_config_file = os.path.join(pkg_share, 'rviz', 'display.rviz')
+
+    # Define the path to the gazebo world file
+    world_sdf_file = os.path.join(pkg_share, 'gazebo', 'arm_model.sdf')
 
     # Node for robot_state_publisher
     robot_state_publisher_node = Node(
@@ -42,15 +45,16 @@ def generate_launch_description():
 
     # Launch Gazebo
     gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(
-            get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
-        )
+        PythonLaunchDescriptionSource(os.path.join(
+            get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')),
+        launch_arguments={'gz_args': world_sdf_file}.items(),  
+    )
 
     # Node to spawn the robot in Gazebo
     spawn_entity_node = Node(
-        package='gazebo_ros', 
-        executable='spawn_entity.py',
-        arguments=['-topic', 'robot_description', '-entity', 'arm_model'],
+        package='ros_gz_sim', 
+        executable='create',
+        arguments=['-topic', 'robot_description', '-name', 'arm_model'],
         output='screen'
     )
     
