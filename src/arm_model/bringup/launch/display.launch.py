@@ -1,9 +1,8 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import ExecuteProcess, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -21,7 +20,7 @@ def generate_launch_description():
         [FindPackageShare("arm_model"), "rviz", "display.rviz"]
     )
     world_sdf_file = PathJoinSubstitution(
-        [FindPackageShare("arm_model"), "gazebo", "arm_model.sdf"]
+        [FindPackageShare("arm_model"), "gazebo", "worlds", "arm_model.sdf"]
     )
 
     # Get robot description from xacro
@@ -34,6 +33,13 @@ def generate_launch_description():
     )
     robot_description = {"robot_description": robot_description_content}
 
+    # Launch Gazebo directly as a process, explicitly setting the plugin path.
+    # This bypasses any shell environment issues.
+    gazebo = ExecuteProcess(
+        cmd=['gz', 'sim', '-r', world_sdf_file],
+        additional_env={'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib'},
+        output='screen'
+    )
 
     # Node for robot_state_publisher
     robot_state_publisher_node = Node(
@@ -50,14 +56,6 @@ def generate_launch_description():
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
-    )
-
-    # Launch Gazebo
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')]
-        ),
-        launch_arguments={'gz_args': world_sdf_file}.items(),
     )
 
     # Node to spawn the robot in Gazebo
