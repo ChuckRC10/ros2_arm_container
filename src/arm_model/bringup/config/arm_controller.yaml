@@ -1,27 +1,27 @@
+# All parameters for the controller manager must be nested under its name
 controller_manager:
-  ros__parameter:
-    update_rate: 10 # Hz
+  ros__parameters:
+    update_rate: 100 # Hz
 
+    # The types of the controllers are defined here
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     joint_trajectory_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-  # Settings for joint trajectory controller
-  joint_trajectory_controller:
-    ros__parameters:
-      # List of joints that this controller will manage
-      joints:
-        - joint1
-        - joint2
-        - joint3
-      interface_name: position
-      # The interfaces (position, velocity, etc.) that the controller will command
-      command_interfaces:
-        - position
 
-      # The interfaces that the controller will use to read the robot's state
-      state_interfaces:
-        - position
-        - velocity
+# All parameters for the joint_trajectory_controller must be nested under its name
+joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+      - joint3
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity

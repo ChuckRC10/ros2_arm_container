@@ -14,8 +14,7 @@ https://github.com/ros-controls/ros2_control_demos.git
   <xacro:include filename="arm_model.materials.xacro" />
 
   <!-- Import arm_model ros2_control description -->
-  <xacro:include filename="$(find arm_model)/description/ros2_control/arm_model.ros2_control.xacro"/>
-
+<xacro:include filename="$(find arm_model)/description/ros2_control/arm_model.ros2_control.xacro" />
   <!-- Used for fixing robot -->
   <link name="world"/>
 

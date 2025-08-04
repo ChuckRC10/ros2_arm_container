@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <world name="plugin_test_world">
+    <plugin
+      filename="libgz_ros2_control-system.so"
+      name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    </plugin>
+  </world>
+</sdf>
