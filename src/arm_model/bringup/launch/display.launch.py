@@ -66,14 +66,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Node for the ros2_control controller manager
-    controller_manager_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[robot_description, controllers_file],
-        output="screen",
-    )
-
     # Node to load the Joint State Broadcaster
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
@@ -100,7 +92,6 @@ def generate_launch_description():
         gazebo,
         robot_state_publisher_node,
         spawn_entity_node,
-        controller_manager_node,
         joint_state_broadcaster_spawner,
         joint_trajectory_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
