@@ -47,22 +47,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-      Name: RobotModel
       Show Revert Options: false
       Update Interval: 0
       Value: true

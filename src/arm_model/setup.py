@@ -7,14 +7,12 @@ package_name = 'arm_model'
 setup(
     name=package_name,
     version='0.0.0',
-    # This should be empty if you have no python modules in a subfolder
     packages=[], 
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         
-        # Corrected paths for your structure
         (os.path.join('share', package_name, 'bringup/launch'), glob('bringup/launch/*.launch.py')),
         (os.path.join('share', package_name, 'description/urdf'), glob('description/urdf/*.xacro')),
         (os.path.join('share', package_name, 'description/ros2_control'), glob('description/ros2_control/*')),

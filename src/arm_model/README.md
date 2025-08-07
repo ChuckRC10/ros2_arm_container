@@ -16,8 +16,3 @@ Clarity: It separates concerns. If you want to change the robot's physical shape
 
 Reusability: You can write a different bringup package for a different simulator, or for the real hardware, all while using the exact same description package.
 
-
-post-installed packages:
-apt-get update && apt-get install -y ros-jazzy-ros2-control ros-jazzy-ros2-controllers
-
-run:export GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ros/jazzy/lib && source /ros2_ws/install/setup.bash && ros2 launch arm_model display.launch.py

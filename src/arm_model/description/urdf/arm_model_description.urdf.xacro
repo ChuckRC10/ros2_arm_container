@@ -17,7 +17,6 @@
         <geometry>
           <box size="${base_width} ${base_width} ${base_height}"/>
         </geometry>
-        <!-- Reference the material by name -->
         <material name="grey"/>
       </visual>
       <collision>
@@ -46,7 +45,6 @@
         <geometry>
           <box size="${arm_width} ${arm_width} ${arm_length}"/>
         </geometry>
-        <!-- Reference the material by name -->
         <material name="blue"/>
       </visual>
       <collision>
@@ -69,7 +67,6 @@
         <geometry>
           <box size="${arm_width} ${arm_width} ${arm_length}"/>
         </geometry>
-        <!-- Reference the material by name -->
         <material name="silver"/>
       </visual>
       <collision>

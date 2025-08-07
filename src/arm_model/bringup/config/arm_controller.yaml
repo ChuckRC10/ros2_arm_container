@@ -1,9 +1,7 @@
-# All parameters for the controller manager must be nested under its name
 controller_manager:
   ros__parameters:
     update_rate: 100 # Hz
 
-    # The types of the controllers are defined here
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
@@ -11,7 +9,6 @@ controller_manager:
       type: joint_trajectory_controller/JointTrajectoryController
 
 
-# All parameters for the joint_trajectory_controller must be nested under its name
 joint_trajectory_controller:
   ros__parameters:
     joints:

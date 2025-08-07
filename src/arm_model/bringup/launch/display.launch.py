@@ -13,15 +13,15 @@ def generate_launch_description():
     xacro_file = PathJoinSubstitution(
         [FindPackageShare("arm_model"), "description", "urdf", "arm_model.urdf.xacro"]
     )
-    controllers_file = PathJoinSubstitution(
-        [FindPackageShare("arm_model"), "bringup", "config", "arm_controller.yaml"]
-    )
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("arm_model"), "rviz", "display.rviz"]
     )
     world_sdf_file = PathJoinSubstitution(
         [FindPackageShare("arm_model"), "gazebo", "worlds", "arm_model.sdf"]
     )
+
+    # Create a global time parameter
+    use_sim_time = {'use_sim_time': True}
 
     # Get robot description from xacro
     robot_description_content = Command(
@@ -33,8 +33,7 @@ def generate_launch_description():
     )
     robot_description = {"robot_description": robot_description_content}
 
-    # Launch Gazebo directly as a process, explicitly setting the plugin path.
-    # This bypasses any shell environment issues.
+    # Launch Gazebo directly as a process
     gazebo = ExecuteProcess(
         cmd=['gz', 'sim', '-r', world_sdf_file],
         additional_env={'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib'},
@@ -46,7 +45,7 @@ def generate_launch_description():
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="both",
-        parameters=[robot_description],
+        parameters=[robot_description, use_sim_time],
     )
 
     # Node for RViz2
@@ -56,6 +55,7 @@ def generate_launch_description():
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
+        parameters=[use_sim_time],
     )
 
     # Node to spawn the robot in Gazebo
@@ -63,7 +63,8 @@ def generate_launch_description():
         package='ros_gz_sim',
         executable='create',
         arguments=['-topic', 'robot_description', '-name', 'arm_model'],
-        output='screen'
+        output='screen',
+        parameters=[use_sim_time],
     )
 
     # Node to load the Joint State Broadcaster
@@ -71,6 +72,7 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        parameters=[use_sim_time],
     )
 
     # Node to load the Joint Trajectory Controller
@@ -78,6 +80,7 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_trajectory_controller", "--controller-manager", "/controller_manager"],
+        parameters=[use_sim_time],
     )
 
     # Ensure RViz starts after the joint_state_broadcaster is ready
