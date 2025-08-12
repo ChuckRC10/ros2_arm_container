@@ -17,11 +17,7 @@
       filename="gz-sim-scene-broadcaster-system"
       name="gz::sim::systems::SceneBroadcaster">
     </plugin>
-    <plugin
-      filename="libgz-sim-ros-clock-system.so"
-      name="gz::sim::systems::ROSClockSystem">
-    </plugin>
-    <!--light-->
+        <!--light-->
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>

@@ -9,19 +9,11 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
 
+    package_name='arm_model'
     # Get paths to config files
-    xacro_file = PathJoinSubstitution(
-        [FindPackageShare("arm_model"), "description", "urdf", "arm_model.urdf.xacro"]
-    )
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("arm_model"), "rviz", "display.rviz"]
-    )
-    world_sdf_file = PathJoinSubstitution(
-        [FindPackageShare("arm_model"), "gazebo", "worlds", "arm_model.sdf"]
-    )
-
-    # Create a global time parameter
-    use_sim_time = {'use_sim_time': True}
+    xacro_file = os.path.join(get_package_share_directory(package_name), "description", "urdf", "arm_model.urdf.xacro")
+    rviz_config_file = os.path.join(get_package_share_directory(package_name), "rviz", "display.rviz")
+    world_sdf_file = os.path.join(get_package_share_directory(package_name), "gazebo", "worlds", "arm_model.sdf")
 
     # Get robot description from xacro
     robot_description_content = Command(
@@ -45,7 +37,7 @@ def generate_launch_description():
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="both",
-        parameters=[robot_description, use_sim_time],
+        parameters=[robot_description],
     )
 
     # Node for RViz2
@@ -55,7 +47,6 @@ def generate_launch_description():
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
-        parameters=[use_sim_time],
     )
 
     # Node to spawn the robot in Gazebo
@@ -64,7 +55,6 @@ def generate_launch_description():
         executable='create',
         arguments=['-topic', 'robot_description', '-name', 'arm_model'],
         output='screen',
-        parameters=[use_sim_time],
     )
 
     # Node to load the Joint State Broadcaster
@@ -72,7 +62,6 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
-        parameters=[use_sim_time],
     )
 
     # Node to load the Joint Trajectory Controller
@@ -80,7 +69,6 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_trajectory_controller", "--controller-manager", "/controller_manager"],
-        parameters=[use_sim_time],
     )
 
     # Ensure RViz starts after the joint_state_broadcaster is ready
@@ -91,6 +79,17 @@ def generate_launch_description():
         )
     )
 
+    bridge_params = os.path.join(get_package_share_directory(package_name), 'bringup', 'config', 'gz_bridge.yaml')
+    ros_gz_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            '--ros-args',
+            '-p',
+            f'config_file:={bridge_params}',
+        ]
+    )
+
     return LaunchDescription([
         gazebo,
         robot_state_publisher_node,
@@ -98,4 +97,5 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         joint_trajectory_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
+        ros_gz_bridge,
     ])
