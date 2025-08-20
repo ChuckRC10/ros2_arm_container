@@ -6,6 +6,7 @@ from std_msgs.msg import Int32
 import multiprocessing as mp
 import sys
 import atexit
+import numpy as np
 
 # ‼️ IMPORTANT: Replace with the ACTUAL path to your script's folder
 sys.path.append('//ros2_ws//src//arm_model//scripts//pygame_make_angles')
@@ -20,12 +21,14 @@ class StreamingBridgeNode(Node):
         self.publisher_ = self.create_publisher(JointTrajectory, '/joint_trajectory_controller/joint_trajectory', 10)
         
         # Subscriber for keystroke node
-        self.subscription = self.create_subscription(
+        self.key_subscription = self.create_subscription(
             Int32,
             '/keyboard/keypress',
             self.listener_callback,
             10)
-        self.subscription
+        self.odom_subscription = self.create_subscription(
+            # TODO: figure out how to get subscription info on joint positions
+        )
         
         # ‼️ IMPORTANT: Make sure these joint names EXACTLY match your controller's YAML file
         self.joint_names = ['joint1', 'joint2', 'joint3']
@@ -45,6 +48,17 @@ def main(args=None):
     # The cleanup function will be called automatically on shutdown (e.g., Ctrl+C)
     streaming_bridge_node.destroy_node()
     rclpy.shutdown()
+
+def get_2d_arm_vectors(lengths, angles)
+    # TODO: calculate 2d vectors of arms
+
+def rotate_arm_vectors(angle, 2d_vectors)
+    # TODO: calculate 3d vectors of arms due to base rotation
+
+def get_end_effector(3d_vectors)
+    return np.sum(3d_vectors)
+
+# TODO: figure out how to translate original arm inverse kinematics code to this system
 
 if __name__ == '__main__':
     main()

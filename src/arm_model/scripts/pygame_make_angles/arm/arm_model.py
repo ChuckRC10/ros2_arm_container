@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.numpy import sin, cos
-
+TODO:
 class RobotArm:
     def __init__(self, armLengths:jnp.array):
         
