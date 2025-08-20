@@ -71,6 +71,13 @@ def generate_launch_description():
         arguments=["joint_trajectory_controller", "--controller-manager", "/controller_manager"],
     )
 
+    # Node to load key to joint trajectory bridge (streaming_bridge_node.py)
+    key_to_joint_traj_bridge = Node(
+        package='arm_model',
+        executable='streaming_bridge_node',
+        output='screen',
+    )
+
     # Ensure RViz starts after the joint_state_broadcaster is ready
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -98,4 +105,5 @@ def generate_launch_description():
         joint_trajectory_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         ros_gz_bridge,
+        key_to_joint_traj_bridge,
     ])
