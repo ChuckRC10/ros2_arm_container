@@ -3,10 +3,12 @@ import rclpy
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import Int32
+from sensor_msgs.msg import JointState
 import multiprocessing as mp
 import sys
 import atexit
 import numpy as np
+import time
 
 # ‼️ IMPORTANT: Replace with the ACTUAL path to your script's folder
 sys.path.append('//ros2_ws//src//arm_model//scripts//pygame_make_angles')
@@ -17,18 +19,22 @@ class StreamingBridgeNode(Node):
         super().__init__('streaming_bridge_node')
         self.get_logger().info("Streaming Bridge Node started.")
 
-        # Publisher for the joint trajectory controller
-        self.publisher_ = self.create_publisher(JointTrajectory, '/joint_trajectory_controller/joint_trajectory', 10)
-        
         # Subscriber for keystroke node
         self.key_subscription = self.create_subscription(
             Int32,
             '/keyboard/keypress',
-            self.listener_callback,
+            self.key_callback,
             10)
+        
+        # Subscriber for joint positions
         self.odom_subscription = self.create_subscription(
-            # TODO: figure out how to get subscription info on joint positions
-        )
+            JointState,
+            'joint_states',
+            self.odom_callback,
+            10)
+
+        # Publisher for the joint trajectory controller
+        self.publisher_ = self.create_publisher(JointTrajectory, '/joint_trajectory_controller/joint_trajectory', 10)
         
         # ‼️ IMPORTANT: Make sure these joint names EXACTLY match your controller's YAML file
         self.joint_names = ['joint1', 'joint2', 'joint3']
@@ -38,8 +44,14 @@ class StreamingBridgeNode(Node):
         self.producer_process = mp.Process(target=test_sin.calculate_angles_loop, args=(self.queue,))
         self.producer_process.start()
 
-    def listener_callback(self, msg):
-        self.get_logger().info('I heard: "%d"' % msg.data)
+    def key_callback(self, msg):
+        self.get_logger().info('I keyed: "%d"' % msg.data)
+        
+    def odom_callback(self, msg):
+        self.joint_positions = msg.position
+        formatted_positions = [f'{p:.3f}' for p in self.joint_positions]
+        self.get_logger().info(f'I jointed: {formatted_positions}')
+        time.sleep(2)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -49,14 +61,14 @@ def main(args=None):
     streaming_bridge_node.destroy_node()
     rclpy.shutdown()
 
-def get_2d_arm_vectors(lengths, angles)
+#def get_2d_arm_vectors(lengths, angles):
     # TODO: calculate 2d vectors of arms
 
-def rotate_arm_vectors(angle, 2d_vectors)
+#def rotate_arm_vectors(angle, vectors_2d):
     # TODO: calculate 3d vectors of arms due to base rotation
 
-def get_end_effector(3d_vectors)
-    return np.sum(3d_vectors)
+def get_end_effector(vectors_3d):
+    return np.sum(vectors_3d)
 
 # TODO: figure out how to translate original arm inverse kinematics code to this system
 
