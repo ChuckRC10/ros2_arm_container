@@ -42,7 +42,7 @@ class StreamingBridgeNode(Node):
 
         # initialize arm class
         self.joint_positions = [0.0, 0.0, 0.0]
-        self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array([0, 0]), 0)
+        self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array([0, 0, 0]))
 
         self.wanted_pos = jnp.array([0, 0, 1])
         self.dampingConstant = .1
@@ -58,10 +58,8 @@ class StreamingBridgeNode(Node):
 
     def timer_callback(self):
         # calculate joint positions
-        current_base_angle = self.joint_positions[0]
-        current_arm_angles = jnp.array(self.joint_positions[1:])
+        current_arm_angles = jnp.array(self.joint_positions)
         self.arm.arm_angles = current_arm_angles
-        self.arm.base_angle = current_base_angle
 
         # get info to move arm
         pressed_key = self.current_key
@@ -79,13 +77,12 @@ class StreamingBridgeNode(Node):
         target_arm_angles = self.arm.arm_angles + delta_q
 
         arm_angles = self.arm.arm_angles.tolist()
-        arm_angles.insert(0, self.arm.base_angle)
 
         # send joint positions to robot
         traj_msg = JointTrajectory()
         traj_msg.joint_names = self.joint_names
         point = JointTrajectoryPoint()
-        new_position = [current_base_angle] + target_arm_angles.tolist()
+        new_position = target_arm_angles.tolist()
         point.positions = new_position
         # self.get_logger().info(f'new position: {new_position}')
         # self.get_logger().info(f'error: {error}')
@@ -98,19 +95,19 @@ class StreamingBridgeNode(Node):
         self.publisher_.publish(traj_msg)
 
 class armClass:
-    def __init__(self, arm_lengths:jnp.array, arm_angles:jnp.array, base_angle):
+    def __init__(self, arm_lengths:jnp.array, arm_angles:jnp.array):
         self.arm_lengths = arm_lengths
         self.arm_angles = arm_angles
-        self.base_angle = base_angle
 
     def getArmVectors(self, angles) -> jnp.array:
         vectors_2d = self.__get2dArmVectors__(angles)
-        vectors_3d = self.__rotate_arm_vectors__(vectors_2d)
+        vectors_3d = self.__rotate_arm_vectors__(vectors_2d, angles)
 
         return vectors_3d
 
     def __get2dArmVectors__(self, angles):
-        globalAngles = jnp.cumsum(angles)
+        angles2d = angles[1:]
+        globalAngles = jnp.cumsum(angles2d)
 
         # calculate vector coordinates
         xArray = self.arm_lengths * sin(globalAngles)
@@ -119,9 +116,10 @@ class armClass:
         armVectorArray = jnp.array([xArray, yArray]).T
         return armVectorArray
 
-    def __rotate_arm_vectors__(self, vectors_2d):
-        cos_theta = cos(self.base_angle)
-        sin_theta = sin(self.base_angle)
+    def __rotate_arm_vectors__(self, vectors_2d, angles):
+        base_angle = angles[0]
+        cos_theta = cos(base_angle)
+        sin_theta = sin(base_angle)
         Rz = jnp.array([
             [cos_theta, -sin_theta, 0],
             [sin_theta,  cos_theta, 0],
@@ -147,6 +145,7 @@ class armClass:
     
     def get_jacobian(self) -> jnp.array:
         J = jax.jacrev(lambda angles: self.get_end_effector(angles))
+        
         return J(self.arm_angles)
     
     def get_error(self, wntd_pos: jnp.array) -> jnp.array:
@@ -166,6 +165,7 @@ def get_movement(pressed_key, maxPositionDelta) -> jnp.array:
     returns how far the pointer will move on the screen based on key inputs
     '''
     xMovement = 0
+    yMovement = 0
     zMovement = 0
     # get user input
     if pressed_key == 87:
@@ -176,8 +176,12 @@ def get_movement(pressed_key, maxPositionDelta) -> jnp.array:
         xMovement = maxPositionDelta
     if pressed_key == 68:
         xMovement = -maxPositionDelta
+    if pressed_key == 81:
+        yMovement = -maxPositionDelta
+    if pressed_key == 69:
+        yMovement = maxPositionDelta
 
-    movementDeltaVector = jnp.array([xMovement, 0, zMovement])
+    movementDeltaVector = jnp.array([xMovement, yMovement, zMovement])
     return movementDeltaVector
 
 def main(args=None):
