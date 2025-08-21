@@ -9,9 +9,6 @@ import jax
 import jax.numpy as jnp
 from jax.numpy import sin, cos
 
-# ‼️ IMPORTANT: Replace with the ACTUAL path to your script's folder
-sys.path.append('//ros2_ws//src//arm_model//scripts//pygame_make_angles')
-
 class StreamingBridgeNode(Node):
     def __init__(self):
         super().__init__('streaming_bridge_node')
@@ -24,6 +21,8 @@ class StreamingBridgeNode(Node):
             self.key_callback,
             10)
         
+        self.current_key = 0
+
         # Subscriber for joint positions
         self.state_subscription = self.create_subscription(
             JointState,
@@ -45,17 +44,17 @@ class StreamingBridgeNode(Node):
         self.joint_positions = [0.0, 0.0, 0.0]
         self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array([0, 0]), 0)
 
-        self.wanted_pos = jnp.array([0.7, 0, 0])
-        self.dampingConstant = 50
-        self.maxPositionDelta = .06    
+        self.wanted_pos = jnp.array([0, 0, 1])
+        self.dampingConstant = .1
+        self.maxPositionDelta = .005 
 
     def key_callback(self, msg):
         self.get_logger().info('I keyed: "%d"' % msg.data)
+        self.current_key = msg.data
         
     def joint_state_callback(self, msg):
         self.joint_positions = msg.position
         formatted_positions = [f'{p:.3f}' for p in self.joint_positions]
-        #self.get_logger().info(f'I jointed: {formatted_positions}')
 
     def timer_callback(self):
         # calculate joint positions
@@ -65,11 +64,11 @@ class StreamingBridgeNode(Node):
         self.arm.base_angle = current_base_angle
 
         # get info to move arm
-        pressed_key = 69
+        pressed_key = self.current_key
         movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
 
         # update wanted position
-        self.wanted_pos = self.wanted_pos + movementDeltaVector
+        self.wanted_pos = self.wanted_pos - movementDeltaVector
 
         # get change in arm angles
         jacobian = self.arm.get_jacobian()
@@ -86,7 +85,12 @@ class StreamingBridgeNode(Node):
         traj_msg = JointTrajectory()
         traj_msg.joint_names = self.joint_names
         point = JointTrajectoryPoint()
-        point.positions = [current_base_angle] + target_arm_angles.tolist()
+        new_position = [current_base_angle] + target_arm_angles.tolist()
+        point.positions = new_position
+        # self.get_logger().info(f'new position: {new_position}')
+        # self.get_logger().info(f'error: {error}')
+        # self.get_logger().info(f'jacobian: {jacobian}')
+        # self.get_logger().info(f'position: {self.arm.get_end_effector(self.arm.arm_angles)}')
         point.time_from_start.sec = 0
         point.time_from_start.nanosec = 150000000 # 0.15 seconds
 
@@ -109,8 +113,8 @@ class armClass:
         globalAngles = jnp.cumsum(angles)
 
         # calculate vector coordinates
-        xArray = self.arm_lengths * cos(globalAngles)
-        yArray = self.arm_lengths * sin(globalAngles)
+        xArray = self.arm_lengths * sin(globalAngles)
+        yArray = self.arm_lengths * -cos(globalAngles)
     
         armVectorArray = jnp.array([xArray, yArray]).T
         return armVectorArray
@@ -124,14 +128,13 @@ class armClass:
             [0, 0, 1]
         ])
 
-        # Get the x and y components from the 2D vectors
+        # Get the x and z components from the 2D vectors
         x_coords = vectors_2d[:, 0]
         z_coords = vectors_2d[:, 1]
 
-        # Create a column of zeros for the new Z-coordinate
+        # Create a column of zeros for the new y-coordinate
         y_coords = jnp.zeros(self.arm_lengths.shape[0])
 
-        # This creates an array of shape (num_links, 3) where each row is [x, y, 0]
         vectors_3d_flat = jnp.column_stack([x_coords, y_coords, z_coords])
             
         # We transpose the rotation matrix to correctly rotate the vectors.
@@ -148,7 +151,7 @@ class armClass:
     
     def get_error(self, wntd_pos: jnp.array) -> jnp.array:
         arm_pos = self.get_end_effector(self.arm_angles)
-        error = wntd_pos - arm_pos #TODO: Sort out 3d vs 2d so we can do full arm error correction
+        error = wntd_pos - arm_pos
         return error
 
 def inv_kinematics_least_sqr(Jacobian: jnp.array, error: jnp.array, damping_c: float) -> list:
@@ -163,18 +166,18 @@ def get_movement(pressed_key, maxPositionDelta) -> jnp.array:
     returns how far the pointer will move on the screen based on key inputs
     '''
     xMovement = 0
-    yMovement = 0
+    zMovement = 0
     # get user input
-    if pressed_key == 69:
-        yMovement = -maxPositionDelta
-    if pressed_key == 0:
-        yMovement = maxPositionDelta
-    if pressed_key == 5:
-        xMovement = -maxPositionDelta
-    if pressed_key == 8:
+    if pressed_key == 87:
+        zMovement = maxPositionDelta
+    if pressed_key == 83:
+        zMovement = -maxPositionDelta
+    if pressed_key == 65:
         xMovement = maxPositionDelta
+    if pressed_key == 68:
+        xMovement = -maxPositionDelta
 
-    movementDeltaVector = jnp.array([xMovement, yMovement, 0])
+    movementDeltaVector = jnp.array([xMovement, 0, zMovement])
     return movementDeltaVector
 
 def main(args=None):
