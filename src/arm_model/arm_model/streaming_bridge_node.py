@@ -42,11 +42,15 @@ class StreamingBridgeNode(Node):
 
         # initialize arm class
         self.joint_positions = [0.0, 0.0, 0.0]
-        self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array([0, 0, 0]))
+        self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array(self.joint_positions))
 
         self.wanted_pos = jnp.array([0, 0, 1])
-        self.dampingConstant = .1
-        self.maxPositionDelta = .005 
+        self.dampingConstant = .03
+        self.maxPositionDelta = 0.005 
+
+        # keypress timeout setup
+        self.key_timeout = self.get_clock().now()
+        self.key_timeout_duration = rclpy.duration.Duration(seconds=0.2)
 
     def key_callback(self, msg):
         self.get_logger().info('I keyed: "%d"' % msg.data)
@@ -66,7 +70,7 @@ class StreamingBridgeNode(Node):
         movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
 
         # update wanted position
-        self.wanted_pos = self.wanted_pos - movementDeltaVector
+        self.wanted_pos = self.wanted_pos + movementDeltaVector
 
         # get change in arm angles
         jacobian = self.arm.get_jacobian()
@@ -94,6 +98,9 @@ class StreamingBridgeNode(Node):
         traj_msg.points.append(point)
         self.publisher_.publish(traj_msg)
 
+        # reset key after use
+        self.current_key = 0
+
 class armClass:
     def __init__(self, arm_lengths:jnp.array, arm_angles:jnp.array):
         self.arm_lengths = arm_lengths
@@ -111,7 +118,7 @@ class armClass:
 
         # calculate vector coordinates
         xArray = self.arm_lengths * sin(globalAngles)
-        yArray = self.arm_lengths * -cos(globalAngles)
+        yArray = self.arm_lengths * cos(globalAngles)
     
         armVectorArray = jnp.array([xArray, yArray]).T
         return armVectorArray
@@ -168,18 +175,18 @@ def get_movement(pressed_key, maxPositionDelta) -> jnp.array:
     yMovement = 0
     zMovement = 0
     # get user input
-    if pressed_key == 87:
-        zMovement = maxPositionDelta
-    if pressed_key == 83:
-        zMovement = -maxPositionDelta
-    if pressed_key == 65:
-        xMovement = maxPositionDelta
     if pressed_key == 68:
+        xMovement = maxPositionDelta
+    if pressed_key == 65:
         xMovement = -maxPositionDelta
     if pressed_key == 81:
         yMovement = -maxPositionDelta
     if pressed_key == 69:
         yMovement = maxPositionDelta
+    if pressed_key == 87:
+        zMovement = maxPositionDelta
+    if pressed_key == 83:
+        zMovement = -maxPositionDelta
 
     movementDeltaVector = jnp.array([xMovement, yMovement, zMovement])
     return movementDeltaVector

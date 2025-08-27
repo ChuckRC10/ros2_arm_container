@@ -8,6 +8,8 @@
     <xacro:property name="base_height" value="0.15"/>
     <xacro:property name="arm_width" value="0.1"/>
     <xacro:property name="arm_length" value="0.5"/>
+    <xacro:property name="grip_width" value="0.05"/>
+    <xacro:property name="grip_length" value="0.2"/>
     
     <!-- *********************** LINKS *********************** -->
     
@@ -82,6 +84,71 @@
       </inertial>
     </link>
     
+    <!-- Gripper Base -->
+    <link name="${prefix}grip_base_link">
+      <visual>
+        <origin xyz="0 0 ${grip_width/2}"/>
+        <geometry>
+          <box size="${grip_length} ${grip_width} ${grip_width}"/>
+        </geometry>
+        <material name="silver"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${grip_width/2}"/>
+        <geometry>
+          <box size="${grip_length} ${grip_width} ${grip_width}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${grip_width/2}"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.0217" ixy="0.0" ixz="0.0" iyy="0.0217" iyz="0.0" izz="0.0017"/>
+      </inertial>
+    </link>
+
+    <!-- Gripper 1 -->
+    <link name="${prefix}grip1_link">
+      <visual>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <geometry>
+          <box size="${grip_width} ${grip_width} ${grip_length}"/>
+        </geometry>
+        <material name="silver"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <geometry>
+          <box size="${grip_width} ${grip_width} ${grip_length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.0217" ixy="0.0" ixz="0.0" iyy="0.0217" iyz="0.0" izz="0.0017"/>
+      </inertial>
+    </link>
+
+    <!-- Gripper 2 -->
+    <link name="${prefix}grip2_link">
+      <visual>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <geometry>
+          <box size="${grip_width} ${grip_width} ${grip_length}"/>
+        </geometry>
+        <material name="green"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <geometry>
+          <box size="${grip_width} ${grip_width} ${grip_length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${grip_length/2}"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.0217" ixy="0.0" ixz="0.0" iyy="0.0217" iyz="0.0" izz="0.0017"/>
+      </inertial>
+    </link>
     <!-- *********************** JOINTS *********************** -->
     
     <joint name="${prefix}base_joint" type="fixed">
@@ -109,6 +176,26 @@
       <child link="${prefix}arm2_link"/>
       <axis xyz="0 1 0"/>
       <origin xyz="0 0 ${arm_length}"/>
+    </joint>
+
+    <joint name="${prefix}base_grip_joint" type="fixed">
+      <parent link="${prefix}arm2_link"/>
+      <child link="${prefix}grip_base_link"/>
+      <origin xyz="0 0 ${arm_length}"/>
+    </joint>
+
+    <joint name="${prefix}grip1_joint" type="fixed">
+      <parent link="${prefix}grip_base_link"/>
+      <child link="${prefix}grip1_link"/>
+      <origin xyz="${grip_length/2} 0 ${grip_width}"/>
+    </joint>
+
+    <joint name="${prefix}grip2_joint" type="prismatic">
+      <parent link="${prefix}grip_base_link"/>
+      <child link="${prefix}grip2_link"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="${-grip_length/2}" upper="${grip_length/2}" effort="10" velocity="0.1"/>
+      <origin xyz="0 0 ${grip_width}"/>
     </joint>
   </xacro:macro>
 </robot>
