@@ -1,4 +1,3 @@
-# streaming_bridge_node.py - The "Consumer"
 import rclpy
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -55,10 +54,12 @@ class StreamingBridgeNode(Node):
     def key_callback(self, msg):
         self.get_logger().info('I keyed: "%d"' % msg.data)
         self.current_key = msg.data
-        
+
     def joint_state_callback(self, msg):
-        self.joint_positions = msg.position
-        formatted_positions = [f'{p:.3f}' for p in self.joint_positions]
+        name_to_pos = {n: p for n, p in zip(msg.name, msg.position)}
+        positions = [float(name_to_pos[n]) for n in self.joint_names if n in name_to_pos]
+        if len(positions) == len(self.joint_names):
+            self.joint_positions = positions
 
     def timer_callback(self):
         # calculate joint positions
@@ -67,10 +68,10 @@ class StreamingBridgeNode(Node):
 
         # get info to move arm
         pressed_key = self.current_key
-        movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
-
+        
         # update wanted position
         self.wanted_pos = self.wanted_pos + movementDeltaVector
+movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
 
         # get change in arm angles
         jacobian = self.arm.get_jacobian()
@@ -88,10 +89,6 @@ class StreamingBridgeNode(Node):
         point = JointTrajectoryPoint()
         new_position = target_arm_angles.tolist()
         point.positions = new_position
-        # self.get_logger().info(f'new position: {new_position}')
-        # self.get_logger().info(f'error: {error}')
-        # self.get_logger().info(f'jacobian: {jacobian}')
-        # self.get_logger().info(f'position: {self.arm.get_end_effector(self.arm.arm_angles)}')
         point.time_from_start.sec = 0
         point.time_from_start.nanosec = 150000000 # 0.15 seconds
 
