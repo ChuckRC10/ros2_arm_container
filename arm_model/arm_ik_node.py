@@ -1,27 +1,25 @@
 import rclpy
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 from sensor_msgs.msg import JointState
-import numpy as np
+import jax.numpy as jnp
 from .kinematics import armClass, inv_kinematics_least_sqr
 from math import isfinite
-
 
 class ArmIKNode(Node):
     def __init__(self):
         super().__init__('arm_ik_node')
-        self.get_logger().info("Arm IK Node started.")
 
         # Subscriber for keystroke node
         self.teleop_subscription = self.create_subscription(
-            Twist,
-            '/wntd_delta_arm_pos',
-            self.teleop_callback,
+            Vector3,
+            '/arm_controller/cmd_vel',
+            self.velocity_callback,
             10)
 
         # initialize movement delta to zero so timer can run before any Twist arrives
-        self.movementDeltaVec = np.array([0.0, 0.0, 0.0])
+        self.target_velocity_vec = jnp.array([0.0, 0.0, 0.0])
 
         # Subscriber for joint positions
         self.state_subscription = self.create_subscription(
@@ -37,17 +35,20 @@ class ArmIKNode(Node):
         self.joint_names = ['joint1', 'joint2', 'joint3']
 
         # create timer to run calculation and publish
-        timer_period = 0.02
+        timer_period = 0.02 # 50 Hz
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # initialize arm class
         self.joint_positions = [0.0, 0.0, 0.0]
-        self.arm = armClass(np.array([0.5, 0.5]), np.array(self.joint_positions))
+        self.arm = armClass(jnp.array([0.5, 0.5]), jnp.array(self.joint_positions))
 
-        self.wanted_pos = np.array([0, 0, 1])
+        self.wanted_pos = jnp.array([0, 0, 1])
         self.dampingConstant = .03
 
-        self._last_logged_movement = None
+        self.get_logger().info("Arm IK Node started.")
+
+    def velocity_callback(self, msg):
+        self.target_velocity_vec = jnp.array([msg.x, msg.y, msg.z])
 
     def teleop_callback(self, msg):
         # Log received linear components (guarded formatting)
@@ -76,12 +77,15 @@ class ArmIKNode(Node):
 
     def timer_callback(self):
         # calculate joint positions
-        current_arm_angles = np.array(self.joint_positions)
+        current_arm_angles = jnp.array(self.joint_positions)
         self.arm.arm_angles = current_arm_angles
 
         # update wanted position
+        dt = self.timer.timer_period_ns / 1e9
+        position_delta = self.target_velocity_vec * dt
+
         current_pose = self.arm.get_end_effector(current_arm_angles)
-        target_pose = current_pose + self.movementDeltaVec
+        target_pose = current_pose + position_delta
 
         # get change in arm angles
         jacobian = self.arm.get_jacobian()
@@ -98,22 +102,14 @@ class ArmIKNode(Node):
         new_position = target_arm_angles.tolist()
         point.positions = new_position
         point.time_from_start.sec = 0
-        point.time_from_start.nanosec = 150000000 # 0.15 seconds
-
+        point.time_from_start.nanosec = int(dt * 1e9)
         traj_msg.points.append(point)
-        self.publisher_.publish(traj_msg)
 
-        # reset movement vector after use
-        self.movementDeltaVec = np.array([0,0,0])
+        if len(new_position) == len(self.joint_names) and all(isfinite(p) for p in new_position):
+            self.publisher_.publish(traj_msg)
+        else:
+            self.get_logger().warning(f"Not publishing invalid trajectory: {new_position}")
 
-def _safe(v, default=0.0):
-    try:
-        if not isfinite(v):
-            return default
-        return float(v)
-    except Exception:
-        return default
-    
 def main(args=None):
     rclpy.init(args=args)
     arm_ik_node = ArmIKNode()
@@ -121,8 +117,6 @@ def main(args=None):
     # The cleanup function will be called automatically on shutdown (e.g., Ctrl+C)
     arm_ik_node.destroy_node()
     rclpy.shutdown()
-
-# TODO: figure out how to translate original arm inverse kinematics code to this system
 
 if __name__ == '__main__':
     main()

@@ -6,63 +6,56 @@ from std_msgs.msg import Int32
 class teleopInputNode(Node):
     def __init__(self):
         super().__init__('teleop_input_node')
-        self.get_logger().info("Teleop Input Node started.")
+
+
+        # Declare and get parameters
+        self.declare_parameter('move_speed', 0.8)  # meters/second
+        self.declare_parameter('key_timeout', 0.5) # seconds
+        self.move_speed = self.get_parameter('move_speed').get_parameter_value().double_value
+        self.key_timeout = self.get_parameter('key_timeout').get_parameter_value().double_value
+
+        # Mapping from keycode to a velocity vector
+        self.key_to_velocity = {
+            68: (self.move_speed, 0.0, 0.0),   # D: +X
+            65: (-self.move_speed, 0.0, 0.0),  # A: -X
+            69: (0.0, self.move_speed, 0.0),   # E: +Y
+            81: (0.0, -self.move_speed, 0.0),  # Q: -Y
+            87: (0.0, 0.0, self.move_speed),   # W: +Z
+            83: (0.0, 0.0, -self.move_speed),  # S: -Z
+        }
+
+        # State variables
+        self.target_velocity = [0.0, 0.0, 0.0]
+        self._last_key_time = self.get_clock().now()
+
+        # Publisher for velocity commands
+        self.publisher_ = self.create_publisher(Vector3, '/arm_controller/cmd_vel', 10)
 
         # Subscriber for keystroke node
         self.key_subscription = self.create_subscription(
-            Int32,
-            '/keyboard/keypress',
-            self.key_callback,
-            10)
-        
-        self.current_key = 0
-        self.maxPositionDelta = 0.005 # max movement in meters per cycle I think?
-
-        # Publisher for the joint trajectory controller
-        self.publisher_ = self.create_publisher(Twist, '/wntd_delta_arm_pos', 10)
-        self.joint_names = ['joint1', 'joint2', 'joint3']
+            Int32, '/keyboard/keypress', self.key_callback, 10)
 
         # create timer to run calculation and publish
-        timer_period = 0.02
+        timer_period = 0.1 # 10 Hz
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        
+        self.get_logger().info("Teleop Input Node started.")
 
     def key_callback(self, msg):
-        self.get_logger().info('I keyed: "%d"' % msg.data)
-        self.current_key = msg.data
+        # Get the velocity vector for the pressed key, or (0,0,0) if it's not a move key
+        self.target_velocity = self.key_to_velocity.get(msg.data, [0.0, 0.0, 0.0])
+        self._last_key_time = self.get_clock().now()
+        self.get_logger().info(f"Key {msg.data} received, setting velocity to {self.target_velocity}")
 
     def timer_callback(self):
-        movement_delta_vec = get_movement(self.current_key, self.maxPositionDelta)
+        # Check for key release timeout
+        if (self.get_clock().now() - self._last_key_time).nanoseconds / 1e9 > self.key_timeout:
+            self.target_velocity = [0.0, 0.0, 0.0] # Set velocity to zero if no key pressed recently
 
-        # only publish when there is meaningful movement
-        if any(abs(v) > 1e-9 for v in movement_delta_vec):
-            twist_msg = Twist()
-            twist_msg.linear = Vector3(x=movement_delta_vec[0], y=movement_delta_vec[1], z=movement_delta_vec[2])
-            twist_msg.angular = Vector3()
-            self.publisher_.publish(twist_msg)
-            self.get_logger().info('Publishing movement delta: x: %.4f, y: %.4f, z: %.4f' %
-                                   (movement_delta_vec[0], movement_delta_vec[1], movement_delta_vec[2]))
-        else:
-            # don't publish or log when there's no movement
-            pass
-
-        self.current_key = 0 # reset key after processing
-
-def get_movement(pressed_key, maxPositionDelta) -> list:
-    '''
-    returns how far the pointer will move on the screen based on key inputs
-    '''
-    
-    key_to_dir = {
-        68: (1, 0, 0),   # D
-        65: (-1, 0, 0),  # A
-        81: (0, -1, 0),  # Q
-        69: (0, 1, 0),   # E
-        87: (0, 0, 1),   # W
-        83: (0, 0, -1),  # S
-    }
-    dir_vec = key_to_dir.get(pressed_key, (0, 0, 0)) # default to no movement
-    movementDeltaVec = [d * maxPositionDelta for d in dir_vec]
-    return movementDeltaVec
+        # Publish the current target velocity
+        msg = Vector3()
+        msg.x, msg.y, msg.z = self.target_velocity
+        self.publisher_.publish(msg)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -71,3 +64,6 @@ def main(args=None):
     # The cleanup function will be called automatically on shutdown (e.g., Ctrl+C)
     teleop_input_node.destroy_node()
     rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
