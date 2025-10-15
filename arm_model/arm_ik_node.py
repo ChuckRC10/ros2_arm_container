@@ -1,26 +1,27 @@
 import rclpy
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_msgs.msg import Int32
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
-import sys
 import jax
 import jax.numpy as jnp
 from jax.numpy import sin, cos
+from math import isfinite
 
-class StreamingBridgeNode(Node):
+class ArmIKNode(Node):
     def __init__(self):
-        super().__init__('streaming_bridge_node')
-        self.get_logger().info("Streaming Bridge Node started.")
+        super().__init__('arm_ik_node')
+        self.get_logger().info("Arm IK Node started.")
 
         # Subscriber for keystroke node
-        self.key_subscription = self.create_subscription(
-            Int32,
-            '/keyboard/keypress',
-            self.key_callback,
+        self.teleop_subscription = self.create_subscription(
+            Twist,
+            '/wntd_delta_arm_pos',
+            self.teleop_callback,
             10)
         
-        self.current_key = 0
+        # initialize movement delta to zero so timer can run before any Twist arrives
+        self.movementDeltaVec = jnp.array([0.0, 0.0, 0.0])
 
         # Subscriber for joint positions
         self.state_subscription = self.create_subscription(
@@ -45,15 +46,27 @@ class StreamingBridgeNode(Node):
 
         self.wanted_pos = jnp.array([0, 0, 1])
         self.dampingConstant = .03
-        self.maxPositionDelta = 0.005 
 
-        # keypress timeout setup
-        self.key_timeout = self.get_clock().now()
-        self.key_timeout_duration = rclpy.duration.Duration(seconds=0.2)
+        self._last_logged_movement = None
 
-    def key_callback(self, msg):
-        self.get_logger().info('I keyed: "%d"' % msg.data)
-        self.current_key = msg.data
+    def teleop_callback(self, msg):
+        # Log received linear components (guarded formatting)
+        try:
+            lx = _safe(msg.linear.x)
+            ly = _safe(msg.linear.y)
+            lz = _safe(msg.linear.z)
+            vec = (lx, ly, lz)  # tuple of floats
+
+            if self._last_logged_movement is None or any(abs(a-b) > 1e-6 for a, b in zip(vec, self._last_logged_movement)):
+                self.get_logger().info(f"I receive twist linear=({vec[0]:.4f}, {vec[1]:.4f}, {vec[2]:.4f})")
+                self._last_logged_movement = vec
+        except Exception:
+            # fallback logging if msg structure is unexpected
+            self.get_logger().info(f"I receive twist (unexpected format): {msg}")
+            lx = ly = lz = 0.0
+
+        # store as jnp.array so later arithmetic with jnp arrays is consistent
+        self.movementDeltaVec = jnp.array([lx, ly, lz])
 
     def joint_state_callback(self, msg):
         name_to_pos = {n: p for n, p in zip(msg.name, msg.position)}
@@ -66,22 +79,17 @@ class StreamingBridgeNode(Node):
         current_arm_angles = jnp.array(self.joint_positions)
         self.arm.arm_angles = current_arm_angles
 
-        # get info to move arm
-        pressed_key = self.current_key
-        
         # update wanted position
-        self.wanted_pos = self.wanted_pos + movementDeltaVector
-movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
+        current_pose = self.arm.get_end_effector(current_arm_angles)
+        target_pose = current_pose + self.movementDeltaVec
 
         # get change in arm angles
         jacobian = self.arm.get_jacobian()
-        error = self.arm.get_error(self.wanted_pos)
+        error = target_pose - current_pose 
         delta_q = inv_kinematics_least_sqr(jacobian, error, self.dampingConstant)
 
         # update arm angles
         target_arm_angles = self.arm.arm_angles + delta_q
-
-        arm_angles = self.arm.arm_angles.tolist()
 
         # send joint positions to robot
         traj_msg = JointTrajectory()
@@ -95,8 +103,8 @@ movementDeltaVector = get_movement(pressed_key, self.maxPositionDelta)
         traj_msg.points.append(point)
         self.publisher_.publish(traj_msg)
 
-        # reset key after use
-        self.current_key = 0
+        # reset movement vector after use
+        self.movementDeltaVec = jnp.array([0,0,0])
 
 class armClass:
     def __init__(self, arm_lengths:jnp.array, arm_angles:jnp.array):
@@ -152,10 +160,6 @@ class armClass:
         
         return J(self.arm_angles)
     
-    def get_error(self, wntd_pos: jnp.array) -> jnp.array:
-        arm_pos = self.get_end_effector(self.arm_angles)
-        error = wntd_pos - arm_pos
-        return error
 
 def inv_kinematics_least_sqr(Jacobian: jnp.array, error: jnp.array, damping_c: float) -> list:
     """Calculate delta q, damped least-squares"""
@@ -164,36 +168,20 @@ def inv_kinematics_least_sqr(Jacobian: jnp.array, error: jnp.array, damping_c: f
     delta_q = damping_matrix @ Jacobian.T @ error
     return delta_q
 
-def get_movement(pressed_key, maxPositionDelta) -> jnp.array:
-    '''
-    returns how far the pointer will move on the screen based on key inputs
-    '''
-    xMovement = 0
-    yMovement = 0
-    zMovement = 0
-    # get user input
-    if pressed_key == 68:
-        xMovement = maxPositionDelta
-    if pressed_key == 65:
-        xMovement = -maxPositionDelta
-    if pressed_key == 81:
-        yMovement = -maxPositionDelta
-    if pressed_key == 69:
-        yMovement = maxPositionDelta
-    if pressed_key == 87:
-        zMovement = maxPositionDelta
-    if pressed_key == 83:
-        zMovement = -maxPositionDelta
-
-    movementDeltaVector = jnp.array([xMovement, yMovement, zMovement])
-    return movementDeltaVector
-
+def _safe(v, default=0.0):
+    try:
+        if not isfinite(v):
+            return default
+        return float(v)
+    except Exception:
+        return default
+    
 def main(args=None):
     rclpy.init(args=args)
-    streaming_bridge_node = StreamingBridgeNode()
-    rclpy.spin(streaming_bridge_node)
+    arm_ik_node = ArmIKNode()
+    rclpy.spin(arm_ik_node)
     # The cleanup function will be called automatically on shutdown (e.g., Ctrl+C)
-    streaming_bridge_node.destroy_node()
+    arm_ik_node.destroy_node()
     rclpy.shutdown()
 
 # TODO: figure out how to translate original arm inverse kinematics code to this system

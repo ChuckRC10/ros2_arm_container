@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from std_msgs.msg import Int32
 
 class teleopInputNode(Node):
@@ -26,47 +26,43 @@ class teleopInputNode(Node):
         timer_period = 0.02
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        def key_callback(self, msg):
-            self.get_logger().info('I keyed: "%d"' % msg.data)
-            self.current_key = msg.data
-        
-        def timer_callback(self):
-            movementDeltaVector = get_movement(self.current_key, self.maxPositionDelta)
-            twist_msg = Twist()
-            twist_msg.linear.x = movementDeltaVector[0]
-            twist_msg.linear.y = movementDeltaVector[1]
-            twist_msg.linear.z = movementDeltaVector[2]
-            twist_msg.angular.x = 0.0
-            twist_msg.angular.y = 0.0
-            twist_msg.angular.z = 0.0
-            self.publisher_.publish(twist_msg)
-            self.get_logger().info('Publishing movement delta: x: %.4f, y: %.4f, z: %.4f' % (movementDeltaVector[0], movementDeltaVector[1], movementDeltaVector[2]))
+    def key_callback(self, msg):
+        self.get_logger().info('I keyed: "%d"' % msg.data)
+        self.current_key = msg.data
 
-            self.current_key = 0 # reset key after processing
+    def timer_callback(self):
+        movement_delta_vec = get_movement(self.current_key, self.maxPositionDelta)
+
+        # only publish when there is meaningful movement
+        if any(abs(v) > 1e-9 for v in movement_delta_vec):
+            twist_msg = Twist()
+            twist_msg.linear = Vector3(x=movement_delta_vec[0], y=movement_delta_vec[1], z=movement_delta_vec[2])
+            twist_msg.angular = Vector3()
+            self.publisher_.publish(twist_msg)
+            self.get_logger().info('Publishing movement delta: x: %.4f, y: %.4f, z: %.4f' %
+                                   (movement_delta_vec[0], movement_delta_vec[1], movement_delta_vec[2]))
+        else:
+            # don't publish or log when there's no movement
+            pass
+
+        self.current_key = 0 # reset key after processing
 
 def get_movement(pressed_key, maxPositionDelta) -> list:
     '''
     returns how far the pointer will move on the screen based on key inputs
     '''
-    xMovement = 0
-    yMovement = 0
-    zMovement = 0
-    # get user input
-    if pressed_key == 68:
-        xMovement = maxPositionDelta
-    if pressed_key == 65:
-        xMovement = -maxPositionDelta
-    if pressed_key == 81:
-        yMovement = -maxPositionDelta
-    if pressed_key == 69:
-        yMovement = maxPositionDelta
-    if pressed_key == 87:
-        zMovement = maxPositionDelta
-    if pressed_key == 83:
-        zMovement = -maxPositionDelta
-
-    movementDeltaVector = [xMovement, yMovement, zMovement]
-    return movementDeltaVector
+    
+    key_to_dir = {
+        68: (1, 0, 0),   # D
+        65: (-1, 0, 0),  # A
+        81: (0, -1, 0),  # Q
+        69: (0, 1, 0),   # E
+        87: (0, 0, 1),   # W
+        83: (0, 0, -1),  # S
+    }
+    dir_vec = key_to_dir.get(pressed_key, (0, 0, 0)) # default to no movement
+    movementDeltaVec = [d * maxPositionDelta for d in dir_vec]
+    return movementDeltaVec
 
 def main(args=None):
     rclpy.init(args=args)

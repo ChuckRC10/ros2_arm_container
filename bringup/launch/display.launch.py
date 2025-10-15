@@ -88,15 +88,22 @@ def generate_launch_description():
         arguments=["parallel_gripper_action_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Node to load key to joint trajectory bridge (streaming_bridge_node.py)
-    key_to_joint_traj_bridge = Node(
+    # Node to load arm_ik_node (arm_ik_node.py)
+    arm_ik_node = Node(
         package='arm_model',
-        executable='streaming_bridge_node',
+        executable='arm_ik_node',
         output='screen',
         
         # debugging
         # prefix="/home/ccurione/ros2_ws/.venv/bin/python -m debugpy --listen 5678 --wait-for-client",
 
+    )
+
+    # Node to load teleop input node (teleop_input_node.py)
+    teleop_input_node = Node(
+        package='arm_model',
+        executable='teleop_input_node',
+        output='screen',
     )
 
     # Ensure RViz starts after the joint_state_broadcaster is ready
@@ -127,5 +134,6 @@ def generate_launch_description():
         parallel_gripper_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         ros_gz_bridge,
-        key_to_joint_traj_bridge,
+        teleop_input_node,
+        arm_ik_node,
     ])

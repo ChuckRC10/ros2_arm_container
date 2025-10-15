@@ -29,7 +29,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'streaming_bridge_node = arm_model.streaming_bridge_node:main',
+            'arm_ik_node = arm_model.arm_ik_node:main',
+            'teleop_input_node = arm_model.teleop_input_node:main',
         ],
     },
 )
